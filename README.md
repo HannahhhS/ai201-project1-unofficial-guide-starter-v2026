@@ -30,7 +30,9 @@
 ## Chunking Strategy
 
 **Chunk size:**
+Each chunk is one full document. The campus_life corpus documents are alreasy short, ranging from 178 to 549 characters. Each document has a heading and the content focuses on the topic in the heading. Keeping the whole document together preserves all the context that may be needed to answer a question. Splitting a longer document into multiple paragraphswould loose important context that would be needed to answer the qyestion. 
 **Overlap:**
+0 characters. Each document stays together as one chunk and is not split, so a overlap is not needed. 
 
 <!-- What about YOUR documents made you pick these numbers? Short posts and
      long sectioned guides don't want the same chunking, and "800 seemed
