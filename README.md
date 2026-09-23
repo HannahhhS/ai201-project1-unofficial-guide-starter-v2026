@@ -2,18 +2,6 @@
 
 <!-- Hannah Sitther, Campus Life -->
 
-> **This file is your submission.** Fill it in as you go — most sections get
-> written during the milestone that produces them, not at the end.
->
-> How the starter works, and every command you'll need, is in `RUNNING.md`.
-> Leave that file alone.
->
-> **Paste everything as text.** No screenshots, no video. A typed table gets
-> full credit; a picture of the same table gets none.
->
-> Delete these instruction blocks as you replace them. The `<!-- -->` comments
-> are notes to you and don't show up when the page renders — you can leave them
-> or remove them.
 
 ---
 
@@ -26,13 +14,14 @@
      this repo.
 
      Milestone 5. -->
+The corpus I picked was the campus_life corpus. This mainly includes short documents regarding all aspects of living at a university, including advising, dining halls, transit, health center, and much more. Each document has a heading, and information in the document is related to the heading. The Unofficial Guide is a retrieval augmented answering system using this corpus. It can answer questions based on retrieved documents found in this corpus. It uses the information to answer the questions. If the retrieved information is not relevant to the question, the question is rejected and the system is not allowed to guess answers. 
 
 ## Chunking Strategy
 
 **Chunk size:**
-Each chunk is one full document. The campus_life corpus documents are alreasy short, ranging from 178 to 549 characters. Each document has a heading and the content focuses on the topic in the heading. Keeping the whole document together preserves all the context that may be needed to answer a question. Splitting a longer document into multiple paragraphswould loose important context that would be needed to answer the qyestion. 
+Each chunk is one full document. The campus_life corpus documents are already short, ranging from 178 to 549 characters. Each document has a heading and the content focuses on the topic in the heading. Keeping the whole document together preserves all the context that may be needed to answer a question. Splitting a longer document into multiple paragraphs would lose important context that would be needed to answer the question. 
 **Overlap:**
-The overlap is 0 characters. Each document stays together as one chunk and is not split, so a overlap is not needed. 
+The overlap is 0 characters. Each document stays together as one chunk and is not split, so an overlap is not needed. 
 
 <!-- What about YOUR documents made you pick these numbers? Short posts and
      long sectioned guides don't want the same chunking, and "800 seemed
@@ -134,9 +123,6 @@ Laundry costs $1.75 wash, $1.75 dry, app-based. On noise: moderate; the building
 
 Question: How many black and white pages can students print?
 
-Answer using only the documents above, and name the file you used.
-======================================================================
-
 
 
 **Answer:**
@@ -157,7 +143,7 @@ Sources retrieved: admin_graduation_requirements.txt, admin_printing_quota.txt, 
      here — the table below wants all ten rows.
 
      Milestone 4. -->
-I kept the relevance cutoff at **0.6**. The four strongest in corpus matches were below 0.6, while all five out of scope questions were above 0.8. However, one of the in corpus questions, "What do I do if I'm sick?", had a best distance of 0.8326, showing that this question was not retrieved well enough for the cutoff. TThis could be becuase the wording of the question doesnt match the wording of the healthcare document I kept 0.6 because it accepts 4 of the 5 in-corpus questions while rejecting all 5 out-of-scope questions.
+I kept the relevance cutoff at **0.6**. The four strongest in corpus matches were below 0.6, while all five out of scope questions were above 0.8. However, one of the in corpus questions, "What do I do if I'm sick?", had a best distance of 0.8326, showing that this question was not retrieved well enough for the cutoff. This could be because the wording of the question doesn't match the wording of the health centre document. I kept 0.6 because it accepts 4 of the 5 in-corpus questions while rejecting all 5 out-of-scope questions.
 
 
 | Question | In corpus? | Best distance |
@@ -184,9 +170,21 @@ I kept the relevance cutoff at **0.6**. The four strongest in corpus matches wer
 
      Milestone 5. -->
 
-**1.**
+**1.** 
+I asked Claude for the code to put in split_documents so that each document
+becomes one chunk. The output that Claude returned, however, used a list
+comprehension and built the whole list inside a return statement. Although this
+worked, it didn't look like the sample in fallback_split, so I rewrote the
+function with Claude to use a for loop and chunks.append(). Making each
+document its own chunk also eliminated the need for chunk size and chunk
+overlap, since there wasn't any splitting behaviour left for them to control.
 
 **2.**
+I wanted to dig into the corpus myself and find the places where documents were
+worded similarly enough that retrieval could get confused, especially anywhere
+that could produce a wrong number. I used Claude to go through the files and
+look for that pattern. This showed similar laundray patterns in which the same words were used, but the numbers were different.  This impacted what I wrote for 5, as the real risk in my corpus is that it returns a true number from the wrong building, so I narrowed the criterion to say the number
+has to come from the document the question is actually about. I used claude to also pressure check my criteria and see if there were any ways to fine tune it. This helped me figure out to check the specific numbers in the corpus. 
 
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never

@@ -25,7 +25,7 @@ contains the answer.
 **Why this target:**
 <!-- e.g. "One of my questions is about a topic only two documents mention, so
      I expect that one to be hard." -->
-     One of my questions is about a topic thats only mentioned in 1 document, so retriveal for that specific question might be harder. 
+     One of my questions is about a topic thats only mentioned in one document, so retriveal for that specific question might be harder. 
 
 ---
 
@@ -36,7 +36,7 @@ Every answer the system produces names at least one source document.
 **Why this target:**
 <!-- Why all five and not four? What about your setup makes that achievable —
      or what would have to go wrong for it not to be? -->
-The two optuins for answering questions is that the answer is pulled from a source, or the information simply does not exist in the source, which would count as out of corpus. Every answer having atleast one source also prevents hallucinations, or the system making something uo to answer the question. It alsi makes the information used to answer the question tracable back to the actual corpus. 
+The two options for answering questions is that the answer is pulled from a source, or the information simply does not exist in the source, which would count as out of corpus. Every answer having atleast one source makes the information used to answer the question traceable back to the actual corpus. 
 
 ---
 
@@ -56,13 +56,13 @@ in at least 4 of 5 tries.
      Was there a clean gap, or did the two groups overlap? -->
 
 
-This is done to prevent questions in which the required information to answer is not presnet in the corpus. I chose 4 out of 5 because the relevance cutoff should reject most questions that are clearly outside the corpus, while allowing for an occasional borderline retrieval result. Testing five questions also gives a more meaningful check than requiring every single question to be rejected
+This is done to prevent questions in which the required information to answer is not present in the corpus. I chose 4 out of 5 because the relevance cutoff should reject most questions that are clearly outside the corpus, while allowing for an occasional borderline retrieval result. Testing five questions also gives a more meaningful check than requiring every single question to be rejected. There was an overlap with the 2 groups because one in corpus question was not retrieved well so the distance slightly overlapped with the out of corpus questions. 
 ---
 
 ## 4. Something about your chunks
 
 
-Each of the documents retrived for the answer becomes exactly one chunk, with its heading and its body kept together. No document is split across chunks.
+For at least 4 of my 5 test questions, the chunk containing the answer keeps the document's heading and the relevant context from the body together with the answer.
 
 
 
@@ -82,7 +82,7 @@ Each of the documents retrived for the answer becomes exactly one chunk, with it
 
 
 **Why this target:**
-I picked this target by actually analyzing the documents, and realizing all documents contain only the information relevent to the heading. Therefore, no documents would need to be split, as that would split valuable information needed for the answer into another chunk. All documents are short, and keeping each document together will prevent useful information from being seperated into different chunks. 
+I picked this target by actually analyzing the documents, and realizing all documents contain only the information relevent to the heading. Therefore, no documents would need to be split, as that would split valuable information needed for the answer into another chunk. All documents are short, and keeping each document together will prevent useful information from being seperated into different chunks. I chose 4 out of 5 becuase one question could still be harder to retrieve when the chunking strategy is used/. 
 
 
 
