@@ -32,7 +32,7 @@
 **Chunk size:**
 Each chunk is one full document. The campus_life corpus documents are alreasy short, ranging from 178 to 549 characters. Each document has a heading and the content focuses on the topic in the heading. Keeping the whole document together preserves all the context that may be needed to answer a question. Splitting a longer document into multiple paragraphswould loose important context that would be needed to answer the qyestion. 
 **Overlap:**
-0 characters. Each document stays together as one chunk and is not split, so a overlap is not needed. 
+The overlap is 0 characters. Each document stays together as one chunk and is not split, so a overlap is not needed. 
 
 <!-- What about YOUR documents made you pick these numbers? Short posts and
      long sectioned guides don't want the same chunking, and "800 seemed
@@ -132,7 +132,17 @@ Laundry costs $1.75 wash, $1.75 dry, app-based. On noise: moderate; the building
 
 **Question:**
 
+Question: How many black and white pages can students print?
+
+Answer using only the documents above, and name the file you used.
+======================================================================
+
+
+
 **Answer:**
+Students get $30 of printing per semester, which is roughly 600 black-and-white pages (admin_printing_quota.txt).
+
+Sources retrieved: admin_graduation_requirements.txt, admin_printing_quota.txt, course_cs_340_exams.txt, money_textbooks.txt, study_group_rooms.txt
 
 ```
 ```
@@ -147,10 +157,21 @@ Laundry costs $1.75 wash, $1.75 dry, app-based. On noise: moderate; the building
      here — the table below wants all ten rows.
 
      Milestone 4. -->
+I kept the relevance cutoff at **0.6**. The four strongest in corpus matches were below 0.6, while all five out of scope questions were above 0.8. However, one of the in corpus questions, "What do I do if I'm sick?", had a best distance of 0.8326, showing that this question was not retrieved well enough for the cutoff. TThis could be becuase the wording of the question doesnt match the wording of the healthcare document I kept 0.6 because it accepts 4 of the 5 in-corpus questions while rejecting all 5 out-of-scope questions.
+
 
 | Question | In corpus? | Best distance |
 |---|---|---|
-|  |  |  |
+| How many black and white pages can students print? | Yes | 0.2749 |
+| When should students book advising appointments? | Yes | 0.5603 |
+| Where is the best place to get a good espresso? | Yes | 0.5660 |
+| What do I do if I'm sick? | Yes | 0.8326 |
+| Which residence halls are quieter to work in? | Yes | 0.3830 |
+| What is the capital of Mongolia? | No | 0.8246 |
+| How do I change the oil in a diesel engine? | No | 0.9340 |
+| Who won the 1994 World Cup? | No | 0.8859 |
+| What is the recommended dosage of ibuprofen for a headache? | No | 0.8442 |
+| How do I write a for loop in Rust? | No | 0.8960 |
 
 ## How I Used AI
 
