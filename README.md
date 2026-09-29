@@ -213,15 +213,84 @@ has to come from the document the question is actually about. I used claude to a
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 4/5 | 4/5 | 4/5 | MET | <!-- Missed Question 3 on all runs -->
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Chunk keeps heading + relevant context together| 4 of 5| 5/5 | 5/5 | 5/5 | MET |
+| 5. Numbers come from the correct document| 4 of 5 | 5/5 | 5/5| 5/5 | MET |
 
 <!-- Underneath, paste the REAL output for each criterion from one of your
      runs — the actual text your system produced, not a description of it.
      Name the file and function that produced it. -->
+
+### Criterion 1 — Retrieved chunks contain the answer
+
+Produced by `run_eval.py::main`, using retrieval from `store.py::search`.
+
+**Ridgeway — Run 1**
+
+```text
+Based on the provided documents, the dining hall with a wait of 10 to 15 minutes at 12:30 is The Ridgeway Café (`dining_the_ridgeway_cafe_followup.txt`). However, the documents do not mention wait times after 2:00 for this café, so I do not have enough information to answer the second part of your question.
+```
+
+The retrieved Ridgeway follow-up chunk contained the 10–15 minute wait at 12:30, but the original Ridgeway document containing the “none after 2:00” information was not retrieved. This shows a missed question, but the criteria still passes since it only requires 4/5
+
+### Criterion 2 — Every answer names a source
+
+Produced by `run_eval.py::main`.
+
+**Printing — Run 1**
+
+```text
+Students get roughly 600 black-and-white pages per semester.
+
+Source: admin_printing_quota.txt
+```
+
+**Innisfree laundry — Run 1**
+
+```text
+The laundry location that costs $1.75 to wash and $1.75 to dry is Innisfree Hall.
+
+Source: housing_innisfree_hall_laundry.txt
+```
+
+### Criterion 3 — Gate stops out-of-corpus questions
+
+Produced by `run_eval.py::check_out_of_scope`, using the 0.6 relevance cutoff.
+
+```text
+Refused 5 of 5.
+```
+
+The five out-of-corpus questions were all refused by the relevance gate.
+
+### Criterion 4 — Chunk keeps heading and relevant context together
+
+Produced by `run_eval.py::main`, with chunks produced by `chunker.py::split_documents`.
+
+**Ridgeway retrieved chunk — Run 1**
+
+```text
+Re: The Ridgeway Café
+
+Adding to what people have said about The Ridgeway Café. The wait figure of 10 to 15 minutes at 12:30 matches what I've seen. If you're trying to eat between classes, go before 11:45 and it's a different building entirely.
+
+Also worth saying: seating is tight; about 40 seats for a building of 900. Nobody tells you this at orientation.
+```
+
+### Criterion 5 — Numbers come from the correct document
+
+Produced by `run_eval.py::main`.
+
+**Innisfree laundry — Run 1**
+
+```text
+The laundry location that costs $1.75 to wash and $1.75 to dry is Innisfree Hall.
+
+Source: housing_innisfree_hall_laundry.txt
+```
+
 
 ## Verdicts
 

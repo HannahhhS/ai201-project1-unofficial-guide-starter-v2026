@@ -24,10 +24,17 @@ names a target of "4 of 5", and four of three is not a thing.
 QUESTIONS = [
     # {"question": "...", "expects": "..."},
     {"question": "How many black and white pages can students print?", "expects": "600"},
-    {"question": "When should students book advising appointments?", "expects": "2 weeks out"},
-    {"question": "Where is the best place to get a good espresso?", "expects": "Ridgeway Cafe"},
-    {"question": "What do I do if I'm sick?", "expects": "8am to 11am"},
-    {"question": "Which residence halls are quieter to work in?", "expects": "Aldridge"},
+    {"question": "Why does the advising information recommend booking appointments two weeks out?", "expects": "advisers get busy"},
+    #{"question": "Where is the best place to get a good espresso?", "expects": "Ridgeway"},
+    #{"question": "How long do students typically wait at Kestrel Commons between 12:15 and 1?", "expects": "20 to 25"},
+    {"question": "Which dining hall has a wait of 10–15 minutes at 12:30 but no wait after 2:00?", "expects": "Ridgeway"},
+    
+    #{"question": "What do I do if I'm sick?", "expects": "8am to 11am"},
+    {"question": "What does the health centre recommend students do if something is urgent?", "expects": "go at 8am and wait"},
+    #{"question": "Which residence halls are quieter to work in?", "expects": "Aldridge"},
+    #{"question": "How much does it cost to wash clothes in Morrow House?", "expects": "$1.50"},
+    {"question": "Which laundry location costs $1.75 to wash and $1.75 to dry?", "expects": "Innisfree"},
+    
 ]
 
 # Questions from a different world entirely. Your gate should refuse all five.
