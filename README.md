@@ -201,6 +201,15 @@ has to come from the document the question is actually about. I used claude to a
 
 ## Run Log — Before
 
+### updated questions
+| How many black and white pages can students print? | pass | pass | pass |
+| Why does the advising information recommend booking appointments two weeks out? | pass | pass | pass |
+| Which dining hall has a wait of 10–15 minutes at 12:30 but no wait after 2:00? | pass | pass | pass | 
+| What does the health centre recommend students do if something is urgent? | fail | fail | pass | 
+| Which laundry location costs $1.75 to wash and $1.75 to dry? | pass | pass | pass |
+
+question 3 is marked as a miss since it did not retrieve the right chunks even with the right answer (ridgeway) mentioned. see below. Question 3 is the right answer, marked as fail due to scorer limiations 
+
 <!-- Your five criteria, three runs each. `python run_eval.py --label before`
      runs the questions, puts the OUT_OF_SCOPE ones through the gate, and
      writes it all into results/ for you. Targets come from criteria.md; the
@@ -305,11 +314,11 @@ Source: housing_innisfree_hall_laundry.txt
 
 | # | Criterion | Verdict | How I decided |
 |---|---|---|---|
-| 1 |  |  |  |
-| 2 |  |  |  |
-| 3 |  |  |  |
-| 4 |  |  |  |
-| 5 |  |  |  |
+| 1 | Retrieved chunk contains the answer | MET | Each run had 4 of 5 questions with the answer in the retrieved chunks. The Ridgeway question was the one miss because the retrieved follow-up chunk did not contain the “none after 2:00” information. |
+| 2 | Every answer names a source | MET | All 15 generated answers named at least one source document. |
+| 3 | Gate stops out-of-corpus questions | MET | The relevance gate refused all 5 out-of-corpus questions, exceeding the target of 4 of 5. |
+| 4 | Chunk keeps heading + relevant context together | MET | At least 4 of the 5 test questions had the relevant heading and answer context together in the retrieved chunk. |
+| 5 | Numbers come from the correct document | MET | The numbers in the answers matched the document being asked about for all 5 test questions, including the similar laundry documents with different prices. |
 
 ## Diagnoses
 
