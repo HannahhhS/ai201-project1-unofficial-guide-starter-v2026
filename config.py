@@ -45,6 +45,33 @@ TOP_K = 5               # how many chunks to pull back per question
 # Most corpora land somewhere between 0.45 and 0.75.
 THRESHOLD = 0.6
 
+# Hybrid retrieval: semantic search and BM25 keyword search, combined.
+#
+# Semantic search matches on meaning, which is the wrong instrument when the
+# answer turns on an exact token. The twelve dining documents in campus_life
+# are near-identical prose and differ only in their numbers, so for "which hall
+# has a wait of 10-15 minutes at 12:30" the numbers ARE the signal — and
+# embeddings are weak on numbers. Measured: the correct chunk sits at semantic
+# rank 14 of 88, and BM25 puts it first. See store.py::search.
+#
+# Set this to False to get the semantic-only behaviour back for comparison.
+# That path is unchanged, so before/after runs differ in one variable only.
+HYBRID = True
+
+# How many candidates each retriever proposes before the two lists are fused.
+# Ignored when HYBRID is False.
+HYBRID_CANDIDATES = 20
+
+# The fusion constant in store.py::_reciprocal_rank_fusion. Each list gives a
+# chunk 1 / (RRF_K + its rank), and the two contributions add.
+#
+# The value from the literature is 60, tuned for web-scale result lists. On 88
+# chunks it is much too flat — 1/61 and 1/62 are barely different, so it washes
+# out the very ranking it is meant to preserve. Measured on this corpus, the
+# correct chunk for the dining question lands at rank 7 with 60 and rank 5
+# with 10. Lower trusts each retriever's top hits more.
+RRF_K = 10
+
 
 # ─── Models ──────────────────────────────────────────────────────────────────
 # Embeddings run on your own machine and cost no API quota.

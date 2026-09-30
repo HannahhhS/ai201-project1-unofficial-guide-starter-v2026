@@ -1,7 +1,7 @@
 """
 Stages 3 and 4 of the pipeline: embedding chunks and retrieving them.
 
-Three things in here are worth knowing about, because they'd quietly break the
+Four things in here are worth knowing about, because they'd quietly break the
 rest of the project if they were wrong:
 
 1. The Chroma collection is created with cosine distance, explicitly. Chroma
@@ -15,9 +15,16 @@ rest of the project if they were wrong:
    `sentence-transformers`. It is the same model — `all-MiniLM-L6-v2`, 384
    dimensions — but it arrives as an ONNX build from Chroma's own CDN, so the
    install needs neither PyTorch nor a reachable Hugging Face. See `_embedder`.
+
+4. `search` is hybrid: semantic and BM25 keyword retrieval, fused by rank. The
+   distance on every Result is still a real cosine distance whichever
+   retriever found the chunk, which is what lets gate.py stay as it is. See
+   `_cosine_distance` for the part that keeps that true.
 """
 
+import math
 import os
+import re
 import shutil
 from dataclasses import dataclass
 
@@ -28,6 +35,7 @@ from dataclasses import dataclass
 os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")
 
 import chromadb  # noqa: E402
+from rank_bm25 import BM25Okapi  # noqa: E402
 
 import config
 from chunker import Chunk
@@ -178,6 +186,93 @@ def build_index(
     return len(chunks)
 
 
+# ─── Keyword retrieval, and fusing it with the semantic kind ─────────────────
+
+_bm25_cache: dict[str, tuple] = {}
+
+
+def _label(meta) -> str:
+    """The id a chunk is known by in both rankings."""
+    return f"{meta.get('source', 'unknown')}#{meta.get('index', 0)}"
+
+
+def _tokenize(text: str) -> list[str]:
+    """
+    Lowercase runs of letters and digits. `12:30` becomes ['12', '30'].
+
+    Splitting on the colon rather than keeping `12:30` whole is deliberate, and
+    measured: a question written "10-15 minutes" has to match a document
+    written "10 to 15 minutes", and it only does if both sides break into the
+    bare numbers. Keeping punctuation-joined tokens intact ranked the right
+    chunk first too, but by a much narrower margin.
+    """
+    return re.findall(r"[a-z0-9]+", text.lower())
+
+
+def _bm25_for(collection):
+    """
+    A BM25 index over the same chunks Chroma already holds.
+
+    BM25 scores a chunk by how many *rare* query terms it contains, so `12:30`
+    — in two chunks out of 88 — counts for far more than `dining`, which is in
+    a dozen. That is exactly the signal embeddings throw away.
+
+    Built once per collection and kept, because building it means reading every
+    document back out of the store. Nothing is re-embedded and nothing is
+    written, so `python app.py index` does NOT need re-running to use this.
+
+    ⚠️ The cache is keyed by collection name, so re-indexing inside one
+    long-running process would keep serving the stale index. That is serve.py's
+    problem only: app.py and run_eval.py exit between indexing and searching.
+    """
+    if collection.name not in _bm25_cache:
+        raw = collection.get(include=["documents", "metadatas", "embeddings"])
+        _bm25_cache[collection.name] = (
+            BM25Okapi([_tokenize(doc) for doc in raw["documents"]]),
+            raw["documents"],
+            raw["metadatas"],
+            raw["embeddings"],
+        )
+    return _bm25_cache[collection.name]
+
+
+def _cosine_distance(a, b) -> float:
+    """
+    Cosine distance between two vectors, on the same scale Chroma reports.
+
+    This exists because BM25 can surface a chunk the semantic query never
+    returned, and such a chunk arrives with no distance attached. gate.py
+    compares `min(distance)` against THRESHOLD, so inventing a number here —
+    0.0, or 1.0 — would quietly wreck the cutoff measured in Milestone 4.
+    Computing the real distance from the stored embedding keeps the gate
+    honest; it agrees with Chroma's own numbers to about 1e-9.
+    """
+    dot = sum(x * y for x, y in zip(a, b))
+    norm = math.sqrt(sum(x * x for x in a)) * math.sqrt(sum(y * y for y in b))
+    return 1.0 - dot / norm if norm else 1.0
+
+
+def _reciprocal_rank_fusion(ranked_lists: list[list[str]], k: int) -> dict[str, float]:
+    """
+    Combine several ranked lists of labels into one score per label.
+
+    Every list gives each of its labels 1 / (k + rank), and the contributions
+    add up. A chunk both retrievers liked therefore outranks one that only a
+    single retriever put first, and a chunk neither ranked highly stays down.
+
+    Fusing on RANK rather than on score is the whole point. BM25 scores run
+    0-20 on this corpus while cosine distances run 0-1, and they point in
+    opposite directions — higher is better for one, lower for the other.
+    Normalising them onto a shared scale is possible, but it is fragile and
+    needs tuning of its own. Ranks are already comparable.
+    """
+    scores: dict[str, float] = {}
+    for labels in ranked_lists:
+        for rank, label in enumerate(labels):
+            scores[label] = scores.get(label, 0.0) + 1.0 / (k + rank + 1)
+    return scores
+
+
 def search(
     question: str,
     top_k: int | None = None,
@@ -185,9 +280,16 @@ def search(
     variant: str = "default",
 ) -> list[Result]:
     """
-    Retrieve the chunks closest in meaning to a question.
+    Retrieve the chunks most relevant to a question, nearest-first.
 
-    Returns them nearest-first, each with its distance.
+    Two retrievers run over the same chunks and their rankings are fused:
+    semantic search, which matches on meaning and is blind to exact tokens, and
+    BM25, which matches on rare exact terms and is blind to meaning. They fail
+    in opposite directions, which is why using both beats either alone.
+
+    Set config.HYBRID = False for the old semantic-only behaviour; that path is
+    unchanged. Either way every Result carries a true cosine distance, so
+    gate.py and THRESHOLD are unaffected by which retriever found what.
     """
     top_k = top_k or config.TOP_K
     name = config.collection_name(corpus, variant)
@@ -199,21 +301,67 @@ def search(
             f"No index called '{name}'. Run `python app.py index` first."
         ) from exc
 
+    query_vector = embed([question])[0]
+
+    # Hybrid asks for more than top_k so the fusion has something to choose
+    # between. Semantic-only still asks for exactly top_k, as it always did.
+    wanted = config.HYBRID_CANDIDATES if config.HYBRID else top_k
     raw = collection.query(
-        query_embeddings=embed([question]),
-        n_results=min(top_k, collection.count()),
+        query_embeddings=[query_vector],
+        n_results=min(wanted, collection.count()),
     )
+    semantic = [
+        (_label(meta), text, meta, float(distance))
+        for text, meta, distance in zip(
+            raw["documents"][0], raw["metadatas"][0], raw["distances"][0]
+        )
+    ]
+
+    if not config.HYBRID:
+        chosen = semantic[:top_k]
+    else:
+        # Everything either retriever proposes, by label. Semantic hits arrive
+        # with a distance from Chroma; BM25-only hits get one computed below.
+        pool = {label: (text, meta, dist) for label, text, meta, dist in semantic}
+
+        bm25, documents, metadatas, embeddings = _bm25_for(collection)
+        scores = bm25.get_scores(_tokenize(question))
+        by_score = sorted(range(len(documents)), key=lambda i: -scores[i])
+
+        keyword: list[str] = []
+        for i in by_score[: min(wanted, len(documents))]:
+            if scores[i] <= 0:
+                break   # no query term in common at all — not a weak match, no match
+            label = _label(metadatas[i])
+            keyword.append(label)
+            pool.setdefault(
+                label,
+                (documents[i], metadatas[i],
+                 _cosine_distance(query_vector, embeddings[i])),
+            )
+
+        fused = _reciprocal_rank_fusion(
+            [[label for label, _, _, _ in semantic], keyword], config.RRF_K
+        )
+        order = sorted(fused, key=lambda label: -fused[label])[:top_k]
+
+        # Fusion decides WHICH top_k chunks come back; they are then handed
+        # over nearest-first, like every other caller of this function has
+        # always been able to assume (tools/smoke_test.py asserts it, and
+        # app.py's retrieve table is read top-down as "closest first"). The
+        # recall win is in the membership, not in the order within it.
+        chosen = sorted(
+            ((label, *pool[label]) for label in order), key=lambda row: row[3]
+        )
 
     results: list[Result] = []
-    for text, meta, distance in zip(
-        raw["documents"][0], raw["metadatas"][0], raw["distances"][0]
-    ):
+    for label, text, meta, distance in chosen:
         results.append(
             Result(
                 text=text,
                 source=str(meta.get("source", "unknown")),
-                label=f"{meta.get('source', 'unknown')}#{meta.get('index', 0)}",
-                distance=float(distance),
+                label=label,
+                distance=distance,
                 produced_by=str(meta.get("produced_by", "unknown")),
             )
         )

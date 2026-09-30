@@ -340,11 +340,27 @@ Source: housing_innisfree_hall_laundry.txt
 
      Milestone 3. -->
 
+
+None of the five acceptance criteria were missed. However, the Ridgeway question exposed a retrieval weakness even though Criterion 1 was still met overall.
+
+**Ridgeway question — Retrieval**
+
+The question asks for two wait-time facts about The Ridgeway Café: 10–15 minutes at 12:30 and no wait after 2:00. The retriever returned the Ridgeway follow-up chunk, which contained the first fact but not the second. The original Ridgeway document contained both facts, but it was not included in the top five retrieved chunks. Because the complete answer was not in the retrieved context, the generation step could not provide the second fact and instead said there was not enough information.
+
+This was a question-level retrieval failure, but it did not cause Criterion 1 to be missed because the other four questions had the answer in their retrieved chunks.
+
+The scorer also marked two health-centre answers as failures because of literal wording differences such as "8:00 AM" versus "8am" and "waiting" versus "wait." Manual inspection showed that the answers were substantively correct, so these were scorer-matching issues rather than system failures.
+
+Because none of the acceptance criteria were missed, my targets were generally achievable for this test set. However, Criterion 1 could be made stricter in a future test by requiring all 5 questions to have the answer in the retrieved chunks rather than 4 of 5. The Ridgeway result showed that a 4 of 5 target can still allow a retrieval weakness to go unnoticed at the criterion level.
+
+
 ## The Improvement
 
 **What I changed:**
+The improvement I chose to implement was hybrid search. Instead of only using semantic search, the system now combines semantic search with BM25 keyword search and uses reciprocal rank fusion (RRF) to combine the results.
 
 **Why I picked it:**
+My Ridgeway question showed a retrieval problem. The semantic search was retrieving a follow-up document that had the 10–15 minute wait time, but it did not contain the information about there being no wait after 2:00. The original Ridgeway document had both pieces of information, so I chose hybrid search because keyword matching could help retrieve the correct document based on specific terms in the question.
 
 <!-- Connect it to a specific diagnosis above in one sentence. If you can't,
      you picked a fix because it sounded impressive. -->
@@ -356,11 +372,11 @@ Source: housing_innisfree_hall_laundry.txt
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 5/5 | 5/5 | 5/5 | MET | 
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Chunk keeps heading + relevant context together| 4 of 5| 5/5 | 5/5 | 5/5 | MET |
+| 5. Numbers come from the correct document| 4 of 5 | 5/5 | 5/5| 5/5 | MET |
 
 **Did it help?**
 
@@ -371,6 +387,8 @@ Source: housing_innisfree_hall_laundry.txt
 
      Milestone 4. -->
 
+     Yes. After adding hybrid search, the original Ridgeway document was retrieved in the top 5 results, and the system was able to answer both parts of the question correctly. The other in-scope questions also continued to produce correct answers, and the relevance gate still refused all 5 out-of-corpus questions. This shows that the change fixed the retrieval problem I identified without causing the other tests to fail.
+
 ## What's Still Broken
 
 <!-- For each criterion still missed after your fix: what you'd do about it,
@@ -380,6 +398,7 @@ Source: housing_innisfree_hall_laundry.txt
      not.
 
      Milestone 5. -->
+     There is no criterion that is still missed. However, the main issue I still noticed is with the evaluation scorer. The health centre answers were substantively correct in all three runs, but the scorer marked two of them as failures because the wording did not exactly match the expected answer. For example, the system said "going at 8am and waiting rather than booking" instead of exactly matching "go at 8am and wait." I would improve the scorer by allowing equivalent wording instead of requiring an exact phrase match. I stopped here because changing the scorer was outside the one system improvement I chose to test.
 
 ## What I'd Do Differently
 
@@ -387,3 +406,5 @@ Source: housing_innisfree_hall_laundry.txt
      differently, and why?
 
      Milestone 5. -->
+
+     I would make Criterion 1 stricter. I originally chose 4 out of 5 questions because I expected that one question could be harder to retrieve. However, the Ridgeway question showed that a single retrieval miss can still cause the system to give an incomplete answer even when the overall criterion is met. Next time, I would require all 5 questions to have the answer in the retrieved chunks so that a retrieval failure like this would be caught by the criterion instead of being hidden by the 4 out of 5 target.
