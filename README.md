@@ -186,6 +186,9 @@ that could produce a wrong number. I used Claude to go through the files and
 look for that pattern. This showed similar laundray patterns in which the same words were used, but the numbers were different.  This impacted what I wrote for 5, as the real risk in my corpus is that it returns a true number from the wrong building, so I narrowed the criterion to say the number
 has to come from the document the question is actually about. I used claude to also pressure check my criteria and see if there were any ways to fine tune it. This helped me figure out to check the specific numbers in the corpus. 
 
+**3.**
+After my Before run, I found that the Ridgeway question was not retrieving the original Ridgeway document. I then asked Claude about implementing hybrid search as my one system improvement. Claude helped me implement a combination of semantic search and BM25 keyword search using reciprocal rank fusion (RRF). I reviewed the changes and tested the system myself. After the change, the original Ridgeway document was retrieved in the top 5 and the system was able to answer both parts of the question.
+
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never
      claims earns nothing.
@@ -208,7 +211,7 @@ has to come from the document the question is actually about. I used claude to a
 | What does the health centre recommend students do if something is urgent? | fail | fail | pass | 
 | Which laundry location costs $1.75 to wash and $1.75 to dry? | pass | pass | pass |
 
-question 3 is marked as a miss since it did not retrieve the right chunks even with the right answer (ridgeway) mentioned. see below. Question 3 is the right answer, marked as fail due to scorer limiations 
+question 3 is marked as a miss since it did not retrieve the right chunks even with the right answer (ridgeway) mentioned. see below. Question 4 is the right answer, marked as fail due to scorer limiations 
 
 <!-- Your five criteria, three runs each. `python run_eval.py --label before`
      runs the questions, puts the OUT_OF_SCOPE ones through the gate, and
@@ -387,7 +390,7 @@ My Ridgeway question showed a retrieval problem. The semantic search was retriev
 
      Milestone 4. -->
 
-     Yes. After adding hybrid search, the original Ridgeway document was retrieved in the top 5 results, and the system was able to answer both parts of the question correctly. The other in-scope questions also continued to produce correct answers, and the relevance gate still refused all 5 out-of-corpus questions. This shows that the change fixed the retrieval problem I identified without causing the other tests to fail.
+     Yes, the hyrbid search did help. Before the improvement, Criterion 1 was 4/5 in all three runs because the Ridgeway question did not have the complete answer in the retrieved chunks. After adding hybrid search, Criterion 1 was 5/5 in all three runs, and the original Ridgeway document was retrieved in the top 5 results. The system was able to answer both parts of the question correctly. The other in-scope questions also continued to produce correct answers, and the relevance gate still refused all 5 out-of-corpus questions. This shows that the change fixed the retrieval problem I identified without causing the other tests to fail.
 
 ## What's Still Broken
 
